@@ -2,13 +2,14 @@ import streamlit as st
 import requests
 
 # URL de base de votre API Flask
-BASE_URL = "http://127.0.0.1:5000/"
+BASE_URL = "http://127.0.0.1:5000"
 
 def fetch_sensor_data():
-    """Récupère les données des capteurs depuis l'API."""
+    """Récupère les 50 dernières données des capteurs depuis l'API."""
     response = requests.get(f"{BASE_URL}/data")
     if response.status_code == 200:
-        return response.json()
+        # Obtient uniquement les 50 dernières données
+        return response.json()[-50:]
     else:
         return []
 
