@@ -21,8 +21,8 @@ class SensorData(db.Model):
     plant_id = db.Column(db.Integer, nullable=False)
     sensor_id = db.Column(db.String(80), nullable=False)
     sensor_version = db.Column(db.String(80), nullable=False)
-    temperature = db.Column(db.Float, nullable=False, default=20.0)  # Valeur par défaut pour temperature
-    humidity = db.Column(db.Float, nullable=False, default=50.0)      # Valeur par défaut pour humidity
+    temperature = db.Column(db.Float, nullable=False, default=20.0)
+    humidity = db.Column(db.Float, nullable=False, default=50.0)
 
 class Anomaly(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -35,18 +35,42 @@ def index():
 
 @app.route('/receive', methods=['POST'])
 def receive_data():
-    # Décoder la chaîne Base64 et désérialiser avec msgpack
     raw_data = request.get_data()
     base64_decoded = base64.b64decode(raw_data)
     data = msgpack.unpackb(base64_decoded, use_list=False, raw=False)
     
-    # Utilisez les données désérialisées pour créer une nouvelle entrée SensorData
+    # Extraction de 'measures'
+    measures = data.get('measures', {})
+
+    # Température
+    temperature_celsius = None
+    temp_keys = ['temperature', 'température']
+    for key in temp_keys:
+        if key in measures:
+            temp_value = measures[key]
+            if '°C' in temp_value:
+                temperature_celsius = float(temp_value.replace('°C', ''))
+            elif '°F' in temp_value:
+                temperature_celsius = (float(temp_value.replace('°F', '')) - 32) * 5.0 / 9.0
+            elif '°K' in temp_value:
+                temperature_celsius = float(temp_value.replace('°K', '')) - 273.15
+            break
+
+    # Humidité
+    humidity_percent = None
+    humid_keys = ['humidity', 'humidite']
+    for key in humid_keys:
+        if key in measures:
+            humidity_value = measures[key]
+            humidity_percent = float(humidity_value.replace('%', ''))
+            break
+
     new_data = SensorData(
         plant_id=data.get('plant_id'),
         sensor_id=data.get('sensor_id'),
         sensor_version=data.get('sensor_version'),
-        temperature=data.get('temperature', 20.0),  # Utilisation de get() avec une valeur par défaut
-        humidity=data.get('humidity', 50.0)         # Utilisation de get() avec une valeur par défaut
+        temperature=temperature_celsius if temperature_celsius is not None else 20.0,
+        humidity=humidity_percent if humidity_percent is not None else 50.0
     )
     db.session.add(new_data)
     try:
@@ -59,8 +83,13 @@ def receive_data():
 @app.route('/data', methods=['GET'])
 def get_data():
     data = SensorData.query.all()
-    return jsonify([{'plant_id': d.plant_id, 'sensor_id': d.sensor_id, 'sensor_version': d.sensor_version,
-                     'temperature': d.temperature, 'humidity': d.humidity} for d in data])
+    return jsonify([{
+        'plant_id': d.plant_id,
+        'sensor_id': d.sensor_id,
+        'sensor_version': d.sensor_version,
+        'temperature': d.temperature,
+        'humidity': d.humidity
+    } for d in data])
 
 @app.route('/anomalies', methods=['GET'])
 def get_anomalies():
