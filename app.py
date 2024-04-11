@@ -3,6 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 import base64
 import msgpack
+import re
+from msgpack.exceptions import ExtraData, UnpackValueError
 
 app = Flask(__name__)
 
@@ -35,14 +37,28 @@ def index():
 
 @app.route('/receive', methods=['POST'])
 def receive_data():
-    raw_data = request.get_data()
-    base64_decoded = base64.b64decode(raw_data)
-    data = msgpack.unpackb(base64_decoded, use_list=False, raw=False)
+    raw_data = request.get_data().strip()
+
+    # Nettoyage des données brutes à l'aide d'expressions régulières
+    cleaned_data = re.sub(r'^/', '', raw_data.decode('utf-8').strip())  # Supprime le slash initial si présent
+    cleaned_data = re.sub(r'ICA=a', '', cleaned_data)  # Supprime 'ICA=a' s'il est présent
+    cleaned_data = re.sub(r'ICA=', '', cleaned_data)  # Supprime 'ICA=' s'il est présent
+
+    try:
+        base64_decoded = base64.b64decode(cleaned_data)
+        data = msgpack.unpackb(base64_decoded, raw=False)
+        if not isinstance(data, dict):
+            raise ValueError("Les données doivent être un dictionnaire.")
+    except (ExtraData, ValueError) as e:
+        record_anomaly("inconnu", f"Erreur lors de la désérialisation des données : {str(e)}")
+        return jsonify({"error": "Format de données invalide"}), 400
+    except UnpackValueError as e:
+        record_anomaly("inconnu", f"Erreur de décodage MsgPack : {str(e)}")
+        return jsonify({"error": "Erreur de décodage MsgPack"}), 400
     
-    # Extraction de 'measures'
+    # Traitement des données valides
     measures = data.get('measures', {})
 
-    # Température
     temperature_celsius = None
     temp_keys = ['temperature', 'température']
     for key in temp_keys:
@@ -56,7 +72,6 @@ def receive_data():
                 temperature_celsius = float(temp_value.replace('°K', '')) - 273.15
             break
 
-    # Humidité
     humidity_percent = None
     humid_keys = ['humidity', 'humidite']
     for key in humid_keys:
@@ -65,20 +80,30 @@ def receive_data():
             humidity_percent = float(humidity_value.replace('%', ''))
             break
 
+    # Enregistrement des anomalies pour les valeurs aberrantes
+    if temperature_celsius and (temperature_celsius < -10 or temperature_celsius > 50):
+        record_anomaly(data.get('sensor_id'), f"Température aberrante détectée: {temperature_celsius}°C")
+
+    if humidity_percent and (humidity_percent < 0 or humidity_percent > 100):
+        record_anomaly(data.get('sensor_id'), f"Humidité aberrante détectée: {humidity_percent}%")
+
+    # Création et enregistrement des données valides avec gestion des valeurs manquantes
     new_data = SensorData(
         plant_id=data.get('plant_id'),
         sensor_id=data.get('sensor_id'),
         sensor_version=data.get('sensor_version'),
-        temperature=temperature_celsius if temperature_celsius is not None else 20.0,
-        humidity=humidity_percent if humidity_percent is not None else 50.0
+        temperature=str(temperature_celsius) if temperature_celsius is not None else "information manquante",
+        humidity=str(humidity_percent) if humidity_percent is not None else "information manquante"
     )
     db.session.add(new_data)
+
     try:
         db.session.commit()
-        return jsonify({"message": "Données reçues avec succès"}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        record_anomaly(data.get('sensor_id'), f"Erreur lors de l'enregistrement des données : {str(e)}")
+
+    return jsonify({"message": "Données reçues avec succès"}), 201
 
 @app.route('/data', methods=['GET'])
 def get_data():
@@ -95,6 +120,16 @@ def get_data():
 def get_anomalies():
     anomalies = Anomaly.query.all()
     return jsonify([{'sensor_data_id': a.sensor_data_id, 'description': a.description} for a in anomalies])
+
+def record_anomaly(sensor_id, description):
+    """Enregistre une anomalie dans la base de données."""
+    anomaly = Anomaly(sensor_data_id=sensor_id, description=description)
+    db.session.add(anomaly)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Erreur lors de l'enregistrement de l'anomalie: {str(e)}")
 
 if __name__ == '__main__':
     with app.app_context():
