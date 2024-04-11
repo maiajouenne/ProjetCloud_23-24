@@ -1,12 +1,21 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, response
 from flask_sqlalchemy import SQLAlchemy
 import os
 import base64
 import msgpack
 import re
 from msgpack.exceptions import ExtraData, UnpackValueError
+from prometheus_flask_exporter import PrometheusMetrics
+from prometheus_client import start_http_server, Summary, Counter, Gauge, generate_latest
+
+# Cré des métriques pour suivre les requêtes et les erreurs.
+REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')
+REQUEST_COUNTER = Counter('requests_total', 'Total count of requests')
+ERROR_COUNTER = Counter('errors_total', 'Total count of errors')
+IN_PROGRESS = Gauge('inprogress_requests', 'In progress requests')
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)  # Initialise Prometheus metrics collection
 
 # Configuration du chemin vers le dossier 'instance' pour la base de données
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -23,8 +32,8 @@ class SensorData(db.Model):
     plant_id = db.Column(db.Integer, nullable=False)
     sensor_id = db.Column(db.String(80), nullable=False)
     sensor_version = db.Column(db.String(80), nullable=False)
-    temperature = db.Column(db.Float, nullable=False, default=20.0)
-    humidity = db.Column(db.Float, nullable=False, default=50.0)
+    temperature = db.Column(db.String, nullable=True)
+    humidity = db.Column(db.String, nullable=True)
 
 class Anomaly(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -108,28 +117,29 @@ def receive_data():
 @app.route('/data', methods=['GET'])
 def get_data():
     data = SensorData.query.all()
-    return jsonify([{
+    result = [{
         'plant_id': d.plant_id,
         'sensor_id': d.sensor_id,
         'sensor_version': d.sensor_version,
         'temperature': d.temperature,
         'humidity': d.humidity
-    } for d in data])
+    } for d in data]
+    return jsonify(result)
 
 @app.route('/anomalies', methods=['GET'])
 def get_anomalies():
     anomalies = Anomaly.query.all()
-    return jsonify([{'sensor_data_id': a.sensor_data_id, 'description': a.description} for a in anomalies])
+    result = [{'sensor_data_id': a.sensor_data_id, 'description': a.description} for a in anomalies]
+    return jsonify(result)
 
 def record_anomaly(sensor_id, description):
-    """Enregistre une anomalie dans la base de données."""
     anomaly = Anomaly(sensor_data_id=sensor_id, description=description)
     db.session.add(anomaly)
     try:
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Erreur lors de l'enregistrement de l'anomalie: {str(e)}")
+        app.logger.error(f"Erreur lors de l'enregistrement de l'anomalie: {e}")
 
 if __name__ == '__main__':
     with app.app_context():
