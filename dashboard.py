@@ -17,14 +17,34 @@ def fetch_anomalies():
     """Récupère les anomalies détectées depuis l'API."""
     response = requests.get(f"{BASE_URL}/anomalies")
     if response.status_code == 200:
-        return response.json()
+        anomalies = response.json()
+        # Limite les résultats aux 20 dernières anomalies
+        if len(anomalies) > 20:
+            anomalies = anomalies[-20:]
+        return anomalies
     else:
         return []
 
+
+
 def display_sensor_data(data):
-    """Affiche les données des capteurs."""
+    """Affiche les données des capteurs avec les valeurs aberrantes en rouge."""
     for entry in data:
-        st.text(f"Plant ID: {entry['plant_id']}, Sensor ID: {entry['sensor_id']}, Temp: {entry['temperature']}, Humidity: {entry['humidity']}")
+        # Définition des seuils d'aberration
+        temp_aberrant = entry['temperature'] < -10 or entry['temperature'] > 50
+        humid_aberrant = entry['humidity'] < 0 or entry['humidity'] > 100
+
+        if temp_aberrant or humid_aberrant:
+            # Affiche en rouge si aberrant
+            st.markdown(
+                f"<span style='color: red;'>Plant ID: {entry['plant_id']}, "
+                f"Sensor ID: {entry['sensor_id']}, Temp: {entry['temperature']}, "
+                f"Humidity: {entry['humidity']}</span>", unsafe_allow_html=True)
+        else:
+            # Affichage normal
+            st.text(f"Plant ID: {entry['plant_id']}, Sensor ID: {entry['sensor_id']}, "
+                    f"Temp: {entry['temperature']}, Humidity: {entry['humidity']}")
+
 
 def display_anomalies(anomalies):
     """Affiche les anomalies détectées."""
