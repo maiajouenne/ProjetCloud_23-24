@@ -8,14 +8,11 @@ from msgpack.exceptions import ExtraData, UnpackValueError
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import start_http_server, Summary, Counter, Gauge, generate_latest
 
-# Cré des métriques pour suivre les requêtes et les erreurs.
-REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')
-REQUEST_COUNTER = Counter('requests_total', 'Total count of requests')
-ERROR_COUNTER = Counter('errors_total', 'Total count of errors')
-IN_PROGRESS = Gauge('inprogress_requests', 'In progress requests')
-
 app = Flask(__name__)
 metrics = PrometheusMetrics(app)  # Initialise Prometheus metrics collection
+
+# static information as metric
+metrics.info('app_info', 'Application info', version='1.0.3')
 
 # Configuration du chemin vers le dossier 'instance' pour la base de données
 basedir = os.path.abspath(os.path.dirname(__file__))
