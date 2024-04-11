@@ -1,5 +1,7 @@
 import streamlit as st
 import requests
+import numpy as np
+from anomaly_detection import detect_anomalies
 
 # URL de base de votre API Flask
 BASE_URL = "http://127.0.0.1:5000"
@@ -8,10 +10,13 @@ def fetch_sensor_data():
     """Récupère les 50 dernières données des capteurs depuis l'API."""
     response = requests.get(f"{BASE_URL}/data")
     if response.status_code == 200:
-        # Obtient uniquement les 50 dernières données
-        return response.json()[-50:]
+        data = response.json()[-50:]
+        # Extrait les valeurs numériques de température et d'humidité
+        temperatures = [float(entry['temperature']) for entry in data if entry['temperature'] != "information manquante"]
+        humidities = [float(entry['humidity']) for entry in data if entry['humidity'] != "information manquante"]
+        return data, np.array(temperatures), np.array(humidities)
     else:
-        return []
+        return [], [], []
 
 def fetch_anomalies():
     """Récupère les anomalies détectées depuis l'API."""
@@ -25,16 +30,10 @@ def fetch_anomalies():
     else:
         return []
 
-
-
-def display_sensor_data(data):
+def display_sensor_data(data, outliers):
     """Affiche les données des capteurs avec les valeurs aberrantes en rouge."""
-    for entry in data:
-        # Définition des seuils d'aberration
-        temp_aberrant = entry['temperature'] < -10 or entry['temperature'] > 50
-        humid_aberrant = entry['humidity'] < 0 or entry['humidity'] > 100
-
-        if temp_aberrant or humid_aberrant:
+    for i, entry in enumerate(data):
+        if outliers[i]:
             # Affiche en rouge si aberrant
             st.markdown(
                 f"<span style='color: red;'>Plant ID: {entry['plant_id']}, "
@@ -45,22 +44,28 @@ def display_sensor_data(data):
             st.text(f"Plant ID: {entry['plant_id']}, Sensor ID: {entry['sensor_id']}, "
                     f"Temp: {entry['temperature']}, Humidity: {entry['humidity']}")
 
+def display_anomalies(data, outliers, anomalies):
+    """Affiche les anomalies détectées et les valeurs aberrantes."""
+    for i, entry in enumerate(data):
+        if outliers[i]:
+            st.text(f"Valeur aberrante détectée dans les données du capteur {entry['sensor_id']}: "
+                    f"Temp: {entry['temperature']}, Humidity: {entry['humidity']}")
 
-def display_anomalies(anomalies):
-    """Affiche les anomalies détectées."""
     for anomaly in anomalies:
-        st.text(f"Anomalie détectée dans les données du capteur {anomaly['sensor_data_id']}: {anomaly['description']}")
+        st.text(f"Anomalie dans les données du capteur {anomaly['sensor_data_id']}: {anomaly['description']}")
 
 def main():
     st.title("Dashboard de la Ferme Urbaine")
 
     st.header("Données des Capteurs")
-    sensor_data = fetch_sensor_data()
-    display_sensor_data(sensor_data)
+    data, temperatures, humidities = fetch_sensor_data()
+    outliers = detect_anomalies(temperatures, humidities)
+
+    display_sensor_data(data, outliers)
 
     st.header("Anomalies Détectées")
     anomalies = fetch_anomalies()
-    display_anomalies(anomalies)
+    display_anomalies(data, outliers, anomalies)
 
 if __name__ == "__main__":
     main()
