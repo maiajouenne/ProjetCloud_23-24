@@ -1,4 +1,4 @@
-.PHONY: all prepare run compose 
+.PHONY: all prepare run 
 
 prepare:
 	poetry config virtualenvs.prefer-active-python true
