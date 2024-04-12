@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+      - job_name: 'sensor'
+        static_configs:
+          - targets: ['sensor1-service:8080', 'sensor2-service:8080', 'sensor3-service:8080', 'sensor4-service:8080', 'sensor5-service:8080', 'sensor6-service:8080', 'sensor7-service:8080', 'sensor8-service:8080', 'sensorcustom-service:8080']
