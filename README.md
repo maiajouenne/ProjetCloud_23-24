@@ -1,91 +1,60 @@
+# Système de Collecte de Données pour Ferme Urbaine
 
-Voici un exemple détaillé de README pour votre projet, intégrant tous les éléments que vous avez mentionnés :
+Ce projet comprend un système de collecte de données pour une ferme urbaine, utilisant une API Flask, Prometheus et Grafana pour le monitoring, ainsi que Docker pour la conteneurisation. Le système collecte des données à partir de divers capteurs, les traite et les stocke, détecte les anomalies et fournit des outils de monitoring visuels.
 
-Projet Cloud 23-24: Système de Surveillance des Capteurs pour Ferme Urbaine
-Description
-Ce projet vise à développer un système de surveillance pour une ferme urbaine utilisant des capteurs IoT pour collecter des données sur l'environnement des plantes. Les données sont traitées et visualisées à l'aide de Flask, Prometheus, Grafana, et Streamlit pour offrir une analyse en temps réel et la détection des anomalies.
+## Structure du Projet
 
-Structure du Projet
-Le projet contient les fichiers et dossiers suivants:
+- `app.py` : Application Flask pour la réception et le traitement des données des capteurs.
+- `dashboard.py` : Application Streamlit pour afficher les données et les anomalies détectées.
+- `anomaly_detection.py` : Contient la logique de détection d'anomalies.
+- `docker-compose.yml` : Fichier Docker Compose pour orchestrer la simulation des capteurs et l'API de collecte de données.
+- `prometheus.yml` : Configuration pour le monitoring Prometheus.
+- Fichiers de déploiement et de service pour le déploiement Kubernetes.
+- `pyproject.toml` : Fichier de dépendances Poetry.
 
-app.py : Application Flask qui reçoit et traite les données des capteurs.
-models.py : Définit les modèles de données SQLAlchemy pour l'application Flask.
-dashboard.py : Application Streamlit pour la visualisation des données.
-anomaly_detection.py : Module Python pour détecter les anomalies dans les données des capteurs.
-docker-compose.yml : Fichier Docker Compose pour orchestrer les services de l'application, Prometheus, et Grafana.
-prometheus.yml : Configuration de Prometheus pour la surveillance des métriques.
-Dockerfile : Fichier Docker pour construire l'image de l'application Flask.
-Prérequis
-Docker et Docker Compose
-Minikube pour le déploiement local des services Kubernetes
-Python 3.8+
-Poetry pour la gestion des dépendances Python
-Installation
-Cloner le dépôt Git :
+## Installation
 
-sh
-Copy code
-git clone https://yourrepository.com/ProjetCloud_23-24.git
-cd ProjetCloud_23-24
-Installer les dépendances :
+Assurez-vous d'avoir Docker, Docker Compose et Poetry installés sur votre système.
 
-sh
-Copy code
-poetry install
-Initialiser l'environnement de développement :
-Assurez-vous que Poetry est configuré correctement pour utiliser l'interpréteur Python approprié.
+### API Backend
 
-sh
-Copy code
+1. Installez les dépendances du projet en utilisant Poetry :
+   ```sh
+   poetry install
+
+Activez l'environnement virtuel : 
 poetry shell
-Lancer les services avec Docker Compose :
 
-sh
-Copy code
-docker-compose up --build
-Démarrer Minikube (pour l'utilisation de Kubernetes localement) :
+2. Démarrez l'API Flask :
+python app.py
 
-sh
-Copy code
+Simulation des Capteurs
+Exécutez les capteurs avec Docker Compose :
+docker-compose up -d
+
+Monitoring Prometheus et Grafana
+1. Démarrez Prometheus en utilisant Docker :
+
+2. Démarrez Grafana en utilisant Docker :
+docker run -p 3000:3000 grafana/grafana
+
+
+Déploiement Kubernetes (Optionnel)
+Déployez les services sur Kubernetes (en supposant que Minikube est utilisé) :
 minikube start
-Déployer les services sur Kubernetes (si applicable) :
+kubectl apply -f deployment/
+kubectl apply -f service/
 
-sh
-Copy code
-kubectl apply -f k8s/
-Accéder aux services de Grafana et Prometheus via Minikube :
-
-sh
-Copy code
+Accédez aux services :
 minikube service grafana-service
 minikube service prometheus-service
+
 Utilisation
-Flask API : Accessible localement via http://localhost:5000/
-Streamlit Dashboard : Lancez le tableau de bord Streamlit pour visualiser les données en temps réel.
-sh
-Copy code
+Une fois que tout est en cours d'exécution, vous pouvez accéder au tableau de bord Streamlit pour voir les données des capteurs et les anomalies :
 streamlit run dashboard.py
-Grafana Dashboard : Accédez à Grafana pour visualiser les métriques et les graphiques liés aux données des capteurs.
-Prometheus : Utilisez Prometheus pour surveiller les métriques de l'application.
-Surveillance et Logs
-Utilisez les commandes suivantes pour interroger Prometheus et observer les logs :
 
-Interroger Prometheus :
+Le tableau de bord doit être accessible à http://localhost:8501.
 
-sh
-Copy code
-curl http://localhost:9090/api/v1/query?query=<votre_requête>
-Visualiser les logs Docker :
+Prometheus et Grafana sont disponibles à http://localhost:9090 et http://localhost:3000, respectivement.
 
-sh
-Copy code
-docker logs <nom_du_conteneur>
-Mise à jour
-Pour mettre à jour le projet avec de nouvelles dépendances ou changements :
-
-sh
-Copy code
-poetry update
-Contribution
-Les contributions sont les bienvenues. Veuillez suivre les pratiques standard pour les contributions en soumettant des pull requests.
 
