@@ -32,12 +32,6 @@ Simulation des Capteurs
 Exécutez les capteurs avec Docker Compose :
 docker-compose up -d
 
-Monitoring Prometheus et Grafana
-1. Démarrez Prometheus en utilisant Docker :
-
-2. Démarrez Grafana en utilisant Docker :
-docker run -p 3000:3000 grafana/grafana
-
 
 Déploiement Kubernetes (Optionnel)
 Déployez les services sur Kubernetes (en supposant que Minikube est utilisé) :
@@ -57,4 +51,7 @@ Le tableau de bord doit être accessible à http://localhost:8501.
 
 Prometheus et Grafana sont disponibles à http://localhost:9090 et http://localhost:3000, respectivement.
 
+Services/déploiement Kubernetes:
+kubectl apply -f service/
+kubectl apply -f deployment/
 
