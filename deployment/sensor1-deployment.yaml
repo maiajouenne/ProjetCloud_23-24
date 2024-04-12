@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sensor1-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sensor1
+  template:
+    metadata:
+      labels:
+        app: sensor1
+    spec:
+      containers:
+      - name: sensor1
+        image: abelfodil/sensor:0.0.1
+        env:
+        - name: SERVER_URL
+          value: "http://flask-service:8080/receive"
+        - name: SCENARIO_ID
+          value: "1"
