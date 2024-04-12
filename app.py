@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, response
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import os
 import base64
@@ -6,13 +6,9 @@ import msgpack
 import re
 from msgpack.exceptions import ExtraData, UnpackValueError
 from prometheus_flask_exporter import PrometheusMetrics
-from prometheus_client import start_http_server, Summary, Counter, Gauge, generate_latest
 
 app = Flask(__name__)
 metrics = PrometheusMetrics(app)  # Initialise Prometheus metrics collection
-
-# static information as metric
-metrics.info('app_info', 'Application info', version='1.0.3')
 
 # Configuration du chemin vers le dossier 'instance' pour la base de données
 basedir = os.path.abspath(os.path.dirname(__file__))
