@@ -1,9 +1,8 @@
 [tool.poetry]
-name = "basics"
+name = "Projet_cloud"
 version = "0.1.0"
-description = ""
-authors = ["Leo Gaudin <leo.gaudin@epita.fr~>"]
-readme = "README.md"
+description = "API et dashboard pour la gestion de données de capteurs dans une ferme urbaine."
+authors = ["Jouenne Maia <maia.jouenne@epita.fr>"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -11,6 +10,12 @@ streamlit = "^1.33.0"
 Flask = "^3.0.3"
 requests = "^2.31.0"
 docker = "^7.0.0"
+flask-sqlalchemy = "^3.1.1"
+msgpack = "^1.0.8"
+scikit-learn = "^1.4.2"
+grafana = "^0.0.1"
+prometheus-client = "^0.20.0"
+prometheus-flask-exporter = "^0.23.0"
 
 
 [build-system]
