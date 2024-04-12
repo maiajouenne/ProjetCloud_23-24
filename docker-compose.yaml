@@ -58,33 +58,34 @@ services:
       - SENSOR_VERSION=FR-v7
       - PERIOD=2s
       - MEASURES=temperature:285.15°K,temperature:286.15°K,humidity:12%
-  prometheus:
-  image: prom/prometheus
-  volumes:
-    - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    - prometheus_data:/prometheus
-  ports:
-    - "9090:9090"
-  depends_on:
-    - sensor1
-    - sensor2
-    - sensor3
-    - sensor4
-    - sensor5
-    - sensor6
-    - sensor7
-    - sensor8
-    - sensorCustom
 
-grafana:
-  image: grafana/grafana
-  volumes:
-    - grafana_data:/var/lib/grafana
-  ports:
-    - "3000:3000"
-  depends_on:
-    - prometheus
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - sensor1
+      - sensor2
+      - sensor3
+      - sensor4
+      - sensor5
+      - sensor6
+      - sensor7
+      - sensor8
+      - sensorCustom
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
 
 volumes:
-  prometheus_data:
-  grafana_data:
+  prometheus_data: {}
+  grafana_data: {}
