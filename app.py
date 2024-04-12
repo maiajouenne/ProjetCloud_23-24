@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import os
 import base64
@@ -29,8 +29,8 @@ class SensorData(db.Model):
     plant_id = db.Column(db.Integer, nullable=False)
     sensor_id = db.Column(db.String(80), nullable=False)
     sensor_version = db.Column(db.String(80), nullable=False)
-    temperature = db.Column(db.String, nullable=True)
-    humidity = db.Column(db.String, nullable=True)
+    temperature = db.Column(db.Float, nullable=False, default=20.0)
+    humidity = db.Column(db.Float, nullable=False, default=50.0)
 
 class Anomaly(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -87,11 +87,11 @@ def receive_data():
             break
 
     # Enregistrement des anomalies pour les valeurs aberrantes
-    if temperature_celsius and (temperature_celsius < -10 or temperature_celsius > 50):
-        record_anomaly(data.get('sensor_id'), f"Température aberrante détectée: {temperature_celsius}°C")
+    #if temperature_celsius and (temperature_celsius < -10 or temperature_celsius > 50):
+    #    record_anomaly(data.get('sensor_id'), f"Température aberrante détectée: {temperature_celsius}°C")
 
-    if humidity_percent and (humidity_percent < 0 or humidity_percent > 100):
-        record_anomaly(data.get('sensor_id'), f"Humidité aberrante détectée: {humidity_percent}%")
+    #if humidity_percent and (humidity_percent < 0 or humidity_percent > 100):
+     #   record_anomaly(data.get('sensor_id'), f"Humidité aberrante détectée: {humidity_percent}%")
 
     # Création et enregistrement des données valides avec gestion des valeurs manquantes
     new_data = SensorData(
@@ -114,31 +114,30 @@ def receive_data():
 @app.route('/data', methods=['GET'])
 def get_data():
     data = SensorData.query.all()
-    result = [{
+    return jsonify([{
         'plant_id': d.plant_id,
         'sensor_id': d.sensor_id,
         'sensor_version': d.sensor_version,
         'temperature': d.temperature,
         'humidity': d.humidity
-    } for d in data]
-    return jsonify(result)
+    } for d in data])
 
 @app.route('/anomalies', methods=['GET'])
 def get_anomalies():
     anomalies = Anomaly.query.all()
-    result = [{'sensor_data_id': a.sensor_data_id, 'description': a.description} for a in anomalies]
-    return jsonify(result)
+    return jsonify([{'sensor_data_id': a.sensor_data_id, 'description': a.description} for a in anomalies])
 
 def record_anomaly(sensor_id, description):
+    """Enregistre une anomalie dans la base de données."""
     anomaly = Anomaly(sensor_data_id=sensor_id, description=description)
     db.session.add(anomaly)
     try:
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Erreur lors de l'enregistrement de l'anomalie: {e}")
+        app.logger.error(f"Erreur lors de l'enregistrement de l'anomalie: {str(e)}")
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=8080)
