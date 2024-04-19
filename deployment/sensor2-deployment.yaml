@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sensor2-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sensor2
+  template:
+    metadata:
+      labels:
+        app: sensor2
+    spec:
+      containers:
+      - name: sensor2
+        image: abelfodil/sensor:0.0.1
+        env:
+        - name: SERVER_URL
+          value: "http://app-service:8080/receive"
+        - name: SCENARIO_ID
+          value: "2"
