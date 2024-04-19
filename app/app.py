@@ -16,7 +16,7 @@ metrics.info('app_info', 'Application info', version='1.0.3')
 
 # Configuration du chemin vers le dossier 'instance' pour la base de données
 basedir = os.path.abspath(os.path.dirname(__file__))
-db_path = os.path.join(basedir, 'instance', 'sensor_data.db')
+db_path = os.path.join(basedir, 'data', 'sensor_data.db')
 
 # Configuration de la base de données avec un chemin absolu
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
