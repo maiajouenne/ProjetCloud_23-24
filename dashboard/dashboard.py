@@ -4,7 +4,8 @@ import numpy as np
 from anomaly_detection import detect_anomalies
 
 # URL de base de votre API Flask
-BASE_URL = "http://127.0.0.1:8080"
+BASE_URL = "http://app:8080"
+
 
 def fetch_sensor_data():
     """Récupère les 50 dernières données des capteurs depuis l'API."""
